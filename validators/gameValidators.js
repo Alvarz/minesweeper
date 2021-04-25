@@ -9,7 +9,7 @@ const newGame = Joi.object({
 const addAction = Joi.object({
   col: Joi.number().required(),
   row: Joi.number().required(),
-  action: Joi.string().required(),
+  action: Joi.string().required().valid('click', 'flag'),
 });
 
 module.exports = {
