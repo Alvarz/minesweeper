@@ -15,7 +15,7 @@ services:
     command: sh -c "
       sleep 3 &&
       npm install && 
-      npm start"
+      npm run dev"
     #command: npm run dev
     volumes:
       - .:/app
