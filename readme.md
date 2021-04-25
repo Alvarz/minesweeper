@@ -22,7 +22,7 @@ docker-compose run web npm test
 ```
 
 
-** Improvements
+## Improvements
 
 - Security
 - More Testing
