@@ -1,9 +1,12 @@
 const express = require('express');
 const { asyncMiddleware } = require('../utils/asyncMiddleware');
 const { gameController } = require('../controllers');
+const { gameValidator: { newGame, addAction } } = require('../validators');
 
-const openDataRouter = express.Router();
+const gameRouter = express.Router();
 
-openDataRouter.get('/get-state', asyncMiddleware(gameController.getStage));
+gameRouter.post('/', asyncMiddleware(gameController.newGame, newGame));
+gameRouter.put('/:id', asyncMiddleware(gameController.addAction, addAction));
+gameRouter.get('/:id', asyncMiddleware(gameController.getState));
 
-module.exports = openDataRouter;
+module.exports = gameRouter;

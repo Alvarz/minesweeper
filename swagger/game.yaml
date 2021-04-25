@@ -1,11 +1,22 @@
 paths:
-  /game/get-state:
-    get:
+  /game/{id}:
+    put:
       tags: # Tag property
         - Game # Value of the tag
       summary: Return the state of the game
       produces:
         - application/json
+      parameters:
+        - in: path
+          name: id
+          required:
+            - id
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/addAction"
       responses: # server responses
         200:
           description: An array with the docments
@@ -13,9 +24,70 @@ paths:
             application/json:
               schema: # Schema definition
                 $ref: "#/definitions/gameState"
+    get:
+      tags: # Tag property
+        - Game # Value of the tag
+      summary: Return the state of the game
+      produces:
+        - application/json
+      parameters:
+        - in: path
+          name: id
+          required:
+            - id
+      responses: # server responses
+        200:
+          description: An array with the docments
+          content:
+            application/json:
+              schema: # Schema definition
+                $ref: "#/definitions/gameState"
+  /game:
+    post:
+      tags: # Tag property
+        - Game # Value of the tag
+      summary: Return the state of the game
+      produces:
+        - application/json
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/definitions/newGame"
+      responses: # server responses
+        200:
+          description: An array with the docments
+          content:
+            application/json:
+              schema: # Schema definition
+                $ref: "#/definitions/message"
 definitions: # Schema defination for request body
+  message:
+    type: object
+    properties:
+      message:
+        type: string
   gameState:
     type: object
     properties:
       message:
         type: string
+  newGame:
+    type: object
+    properties:
+      width:
+        type: number
+      height:
+        type: number
+      percent_of_mines:
+        type: number
+  addAction:
+    type: object
+    properties:
+      action:
+        type: string
+      row:
+        type: number
+      col:
+        type: number

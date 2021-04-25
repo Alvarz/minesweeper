@@ -1,27 +1,17 @@
-const debug = require('debug')('storage.index');
+const debug = require('debug')('storages.index');
 const { MongoClient } = require('mongodb');
 
-class Mongo {
-  constructor() {
-    const url = 'mongodb://db:27017';
-    const dbName = 'minesweeper';
-    this._init(url, dbName);
-    this.db = null;
-  }
+const url = 'mongodb://db:27017';
+const dbName = 'minesweeper';
 
-  _init(url, dbName) {
+class Mongo {
+  async getConnection() {
     // Database Name
     const client = new MongoClient(url, { useUnifiedTopology: true });
-
-    // Use connect method to connect to the server
-    client.connect((err) => {
-      if (err) throw err;
-      debug('Connected successfully to server');
-      this.db = client.db(dbName);
-
-      // client.close();
-    });
+    await client.connect();
+    debug('Connected successfully to server');
+    return client.db(dbName);
   }
 }
 
-module.exports = new Mongo();
+module.exports = Mongo;
