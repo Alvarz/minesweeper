@@ -1,3 +1,13 @@
+const debug = require('debug')('lib.minesweeper');
+const { clamp } = require('./utils');
+
+const gridNode = {
+  print: '#',
+  value: '0',
+  opened: false,
+  flagged: false,
+};
+
 class MineSweeper {
   constructor(width, height, NumberOfMines) {
     this.width = width;
@@ -7,45 +17,116 @@ class MineSweeper {
   }
 
   init() {
-    this.buildGrid();
-    this.addMines();
-    // this.countMinesAround();
+    debug('init new game');
+    this._buildGrid();
+    this._addMines();
+    this._countMinesAround();
   }
 
-  buildGrid() {
-    this.grid = [...Array(this.width)].map(() => Array(this.width).fill('#'));
+  _checkState() {
+    debug('check states');
+    if (this.gameOver) {
+      this._revealMines();
+      debug('GameOver');
+    }
+    this._checkLevelCompletion();
+    this.printMap();
   }
 
-  countMinesAround() {
+  _checkLevelCompletion() {
+    debug('checking level completition');
+    let levelComplete = true;
     for (let i = 0; i < this.width; i++) {
       for (let j = 0; j < this.height; j++) {
-        this.drawNumbers(i, j, false);
+        if ((this.grid[i][j].value !== 'X') && (this.grid[i][j].opened)) levelComplete = false;
+      }
+    }
+    if (levelComplete) {
+      this._revealMines();
+    }
+  }
+
+  _buildGrid() {
+    debug('building new grid');
+    this.grid = [...Array(this.width)].map(() => Array(this.width).fill(null));
+    for (let i = 0; i < this.width; i++) {
+      for (let j = 0; j < this.height; j++) {
+        this.grid[i][j] = { ...gridNode };
       }
     }
   }
 
-  addMines() {
+  _countMinesAround() {
+    for (let i = 0; i < this.width; i++) {
+      for (let j = 0; j < this.height; j++) {
+        this._drawNumbers(i, j);
+      }
+    }
+  }
+
+  _addMines() {
     for (let i = 0; i <= this.NumberOfMines; i++) {
       const row = Math.floor(Math.random() * this.width);
       const col = Math.floor(Math.random() * this.height);
-      this.grid[row][col] = 'X';
+      this.grid[row][col].value = 'X';
     }
+  }
+
+  flag(row, col) {
+    row = Math.abs(row);
+    col = Math.abs(col);
+    if (this.grid[row][col].opened) return;
+    this.grid[row][col].flagged = true;
+    this.grid[row][col].print = 'F';
   }
 
   click(row, col) {
     row = Math.abs(row);
     col = Math.abs(col);
-    console.log(`clicked on row ${row}, col ${col}`);
-    const value = this.grid[row][col];
-    if (value === 'X') {
+    debug(`clicked on row ${row}, col ${col}`);
+    const gNode = this.grid[row][col];
+    if (gNode.value === 'X') {
       this.gameOver = true;
       return;
     }
+    this.grid[row][col] = {
+      ...gNode,
+      print: gNode.value,
+      opened: true,
+    };
 
-    this.drawNumbers(row, col);
+    if (gNode.value === 0) {
+      // Reveal all adjacent cells as they do not have a mine
+      // Recursive Call
+
+      const nodes = this.buildNodesToEvaluate(row, col);
+      nodes.forEach((node) => {
+        const gNod = this.grid[node.row][node.col];
+        if (gNod.value === 0 && !gNod.opened) this.click(node.row, node.col);
+        else if (gNod.value !== 0) {
+          this.grid[node.row][node.col] = {
+            ...gNod,
+            print: gNod.value,
+            opened: true,
+          };
+        }
+      });
+    }
+    this._checkState();
   }
 
-  IsValidMovement(row, col) {
+  _revealMines() {
+    debug('REVAL MINES');
+    for (let i = 0; i < this.width; i++) {
+      for (let j = 0; j < this.height; j++) {
+        if (this.grid[i][j].value === 'X') {
+          this.grid[i][j].print = this.grid[i][j].value;
+        }
+      }
+    }
+  }
+
+  _isValidMovement(row, col) {
     const ValidRow = this.grid[row];
     if (!ValidRow) return false;
     const ValidCol = this.grid[row][col];
@@ -53,95 +134,93 @@ class MineSweeper {
     return true;
   }
 
-  review(row, col) {
-    if (!this.IsValidMovement(row, col)) {
+  _review(row, col) {
+    if (!this._isValidMovement(row, col)) {
       return 0;
     }
 
-    console.log(`trying to check - row: ${row}  col: ${col + 1}`);
     let number = 0;
-    const val = this.grid[row][col];
-    console.log(`checking - row: ${row}  col: ${col + 1} with value: `, val);
-    if (val === 'X' || val === 'X checked') {
+    const gNode = this.grid[row][col];
+    if (gNode.value === 'X' || gNode.value === 'X checked') {
       number++;
-      this.grid[row][col] = 'X checked';
-    } else {
-      this.grid[row][col] = 'checked';
     }
     return number;
   }
 
-  drawNumbers(row, col, further = true) {
+  _drawNumbers(row, col) {
     let number = 0;
+    if (this.grid[row][col].value === 'X' || this.grid[row][col].value === 'X checked') { return this.grid[row][col].value; }
+    const nodes = this.buildNodesToEvaluate(row, col);
+    nodes.forEach((node) => {
+      number += this._review(node.row, node.col);
+    });
+    this.grid[row][col].value = number;
+  }
 
-    const nodes = [
+  printMap() {
+    const printable = [...Array(this.width)].map(() => Array(this.width).fill('#'));
+    const real = [...Array(this.width)].map(() => Array(this.width).fill('#'));
+    for (let i = 0; i < this.width; i++) {
+      for (let j = 0; j < this.height; j++) {
+        // printable[i][j] = this.grid[i][j].value;
+        printable[i][j] = this.grid[i][j].print;
+        real[i][j] = this.grid[i][j].value;
+      }
+    }
+    // console.log('values');
+    // console.table(real);
+    console.log('FINAL');
+    console.table(printable);
+  }
+
+  isGameOver() {
+    return this.gameOver;
+  }
+
+  buildNodesToEvaluate(row, col) {
+    return [
       // top
       {
-        row: row + 1,
+        row: clamp(row + 1, 0, this.width - 1),
         col,
       },
       // bottom
       {
-        row: row - 1,
+        row: clamp(row - 1, 0, this.width - 1),
         col,
       },
       // left
       {
         row,
-        col: col - 1,
+        col: clamp(col - 1, 0, this.height - 1),
       },
       // right
       {
         row,
-        col: col + 1,
+        col: clamp(col + 1, 0, this.height - 1),
       },
       // top left corner
       {
-        row: row - 1,
-        col: col - 1,
+        row: clamp(row - 1, 0, this.width - 1),
+        col: clamp(col - 1, 0, this.height - 1),
       },
       // top right corner
       {
-        row: row - 1,
-        col: col + 1,
+        row: clamp(row - 1, 0, this.width - 1),
+        col: clamp(col + 1, 0, this.height - 1),
       },
 
       // bottom left corner
       {
-        row: row + 1,
-        col: col - 1,
+        row: clamp(row + 1, 0, this.width - 1),
+        col: clamp(col - 1, 0, this.height - 1),
       },
       // bottom right corner
       {
-        row: row + 1,
-        col: col + 1,
+        row: clamp(row + 1, 0, this.width - 1),
+        col: clamp(col + 1, 0, this.height - 1),
       },
     ];
-
-    /* for (const node of nodes) {
-      number += this.review(node.row, node.col);
-    } */
-
-    nodes.forEach((node) => {
-      number += this.review(node.row, node.col);
-    });
-
-    console.log('number: ', number);
-    if (number < 1 && further) {
-      // Reveal all adjacent cells as they do not have a mine
-      // this.drawNumbers(nodes[0].row, nodes[0].col, false);
-      nodes.map((node) => this.drawNumbers(node.row, node.col, false));
-    }
-
-    this.grid[row][col] = number;
-  }
-
-  printMap() {
-    console.table(this.grid);
-  }
-
-  isGameOver() {
-    return this.gameOver;
   }
 }
 
