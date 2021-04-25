@@ -1,5 +1,6 @@
 require('dotenv').config();
 // const config = require('config');
+require('./storage');
 const MineSweeper = require('./MineSweeper');
 
 const mineSweeperInst = new MineSweeper(10, 10, 30);

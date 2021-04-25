@@ -80,3 +80,5 @@ public.key
 *.sw*
 
 *.pem
+
+data/*
