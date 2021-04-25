@@ -23,7 +23,7 @@ const newGame = async (width, height, percentOfMines) => {
   return { insertedId };
 };
 
-const _permformAction = (minesweeperInst, action, row, col) => {
+const _performAction = (minesweeperInst, action, row, col) => {
   switch (action) {
   case 'click':
     return minesweeperInst.click(row, col);
@@ -37,12 +37,13 @@ const _permformAction = (minesweeperInst, action, row, col) => {
 const addAction = async (id, row, col, action) => {
   const state = await gameStorage.getState(id);
 
+  if (!state) throw new notFoundError('Not found game with given id');
   if (state.gameOver || state.victory) throw new badRequestError('Cannot perform action on a finished game');
 
   state.actions.push({ action, row, col });
   // build from data;
   const minesweeperInst = new Minesweeper(null, null, null, state);
-  _permformAction(minesweeperInst, action, row, col);
+  _performAction(minesweeperInst, action, row, col);
   const newState = minesweeperInst.state;
   newState.actions = state.actions;
   await gameStorage.upateGame(id, { ...newState });
@@ -55,4 +56,5 @@ module.exports = {
   getState,
   newGame,
   addAction,
+  _performAction,
 };
