@@ -3,6 +3,37 @@ const sinon = require('sinon');
 const { notFoundError, badRequestError } = require('../../errors');
 const Minesweeper = require('../../lib/MineSweeper');
 
+const buildDataVictory = {
+  width: 2,
+  height: 2,
+  grid: [[{
+    print: 1,
+    value: 1,
+    opened: true,
+    flagged: false,
+  },
+  {
+    print: 1,
+    value: 1,
+    opened: true,
+    flagged: false,
+  }],
+  [{
+    print: '#',
+    value: 1,
+    opened: false,
+    flagged: false,
+  },
+  {
+    print: '#',
+    value: 'X',
+    opened: false,
+    flagged: false,
+  }],
+
+  ],
+};
+
 const buildData = {
   width: 2,
   height: 2,
@@ -101,6 +132,13 @@ describe('Minesweeper', () => {
       instance.click(1, 1);
       const { state } = instance;
       expect(state.gameOver).to.be.true;
+    });
+
+    it('Expect click to be true and game to be victory', () => {
+      const instance = new Minesweeper(null, null, null, buildDataVictory);
+      instance.click(1, 0);
+      const { state } = instance;
+      expect(state.victory).to.be.true;
     });
   });
 });

@@ -1,4 +1,3 @@
-const debug = require('debug')('storages.game');
 const { ObjectId } = require('mongodb');
 const Mongo = require('./mongoClient');
 
